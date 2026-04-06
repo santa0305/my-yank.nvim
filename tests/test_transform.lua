@@ -8,8 +8,8 @@ local new_set = MiniTest.new_set
 local eq = MiniTest.expect.equality
 
 -- transform モジュールと util を読み込みます
-local transform = require("my-yank.transform")
-local util = require("my-yank.util")
+local transform = require("my_yank.transform")
+local util = require("my_yank.util")
 
 -- このファイルのテストセットを作ります
 local TestTransform = new_set()

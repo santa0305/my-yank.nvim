@@ -1,4 +1,4 @@
-local util = require("my-yank.util")
+local util = require("my_yank.util")
 
 local M = {}
 

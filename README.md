@@ -21,7 +21,7 @@ Neovim 用のコンパクトなヤンク補助プラグインです。
 ## セットアップ
 
 ```lua
-require("my-yank").setup()
+require("my_yank").setup()
 ```
 
 ## コマンド
@@ -58,7 +58,7 @@ require("my-yank").setup()
 ## 設定例
 
 ```lua
-require("my-yank").setup({
+require("my_yank").setup({
   presets = {
     copy_buffer_codeblock = {
       source = "buffer",

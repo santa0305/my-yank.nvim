@@ -7,21 +7,21 @@ function M.setup()
 	vim.g.my_yank_commands_loaded = true
 
 	vim.api.nvim_create_user_command("MyYankRun", function(opts)
-		require("my-yank").run(opts.args)
+		require("my_yank").run(opts.args)
 	end, {
 		nargs = 1,
 		complete = function()
-			local presets = require("my-yank.config").get().presets or {}
+			local presets = require("my_yank.config").get().presets or {}
 			return vim.tbl_keys(presets)
 		end,
 	})
 
 	vim.api.nvim_create_user_command("MyYankCopyPath", function()
-		require("my-yank").run("copy_path")
+		require("my_yank").run("copy_path")
 	end, {})
 
 	vim.api.nvim_create_user_command("MyYankCopyBufferCodeblock", function()
-		require("my-yank").run("copy_buffer_codeblock")
+		require("my_yank").run("copy_buffer_codeblock")
 	end, {})
 end
 

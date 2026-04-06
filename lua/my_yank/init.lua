@@ -1,6 +1,6 @@
-local config = require("my-yank.config")
-local commands = require("my-yank.commands")
-local runner = require("my-yank.runner")
+local config = require("my_yank.config")
+local commands = require("my_yank.commands")
+local runner = require("my_yank.runner")
 
 local M = {}
 
