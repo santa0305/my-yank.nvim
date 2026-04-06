@@ -85,4 +85,21 @@ function M.register(opts)
 	})
 end
 
+function M.messages(opts)
+	opts = opts or {}
+
+	local text = vim.fn.execute("messages", "silent")
+	local lines = util.text_to_lines(text)
+
+	return util.make_payload({
+		text = text,
+		lines = lines,
+		source = "messages",
+		bufnr = vim.api.nvim_get_current_buf(),
+		filetype = "txt",
+		filepath = "messages",
+		metadata = { kind = "messages" },
+	})
+end
+
 return M

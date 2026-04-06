@@ -8,6 +8,7 @@ Neovim 用のコンパクトなヤンク補助プラグインです。
 - ビジュアル選択範囲を Markdown のコードブロックとしてコピー
 - 現在のファイルパス（相対パス）をコピー
 - 現在の行番号付きのファイルパス（相対パス）をコピー
+- `:messages` の内容を Markdown のコードブロックとしてコピー
 - `source -> transform[] -> sink[]` というパイプラインでコピー処理を組み立て可能
 
 ## 構成
@@ -41,6 +42,16 @@ require("my-yank").setup({
         -- ファイルタイプと相対パスを info に含めたコードブロックを生成します。
         -- 例: ```lua:lua/hogehoge.lua
         { "codeblock", lang = "auto", path = "relative" },
+      },
+      sinks = { "clipboard", "notify" },
+    },
+
+    -- :messages をコードブロックとしてコピーする例
+    copy_messages_codeblock = {
+      source = "messages",
+      transforms = {
+        -- info 行は例として ```text:messages のようになります
+        { "codeblock", lang = "text", path = "relative" },
       },
       sinks = { "clipboard", "notify" },
     },

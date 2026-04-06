@@ -28,6 +28,18 @@ M.defaults = {
 				"notify",
 			},
 		},
+		copy_messages_codeblock = {
+			source = "messages",
+			transforms = {
+				{ "codeblock", lang = "txt", path = "relative" },
+			},
+			sinks = {
+				-- クリップボードに書き込み
+				"clipboard",
+				-- 通知でフィードバック
+				"notify",
+			},
+		},
 		copy_path = {
 			source = "filepath",
 			source_opts = { format = "relative" },
