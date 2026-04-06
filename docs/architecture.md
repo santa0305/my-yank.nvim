@@ -2,22 +2,22 @@
 
 ## 目的
 
-`my-yank.nvim` は、Neovim上のコピー処理を統一的に扱うための小さなプラグインとする。  
-対象は「どこから取るか」「どう整形するか」「どこへ出すか」の3点に限定する。  
+`my-yank.nvim` は、Neovim 上のコピー処理を統一的に扱うための小さなプラグインとする。  
+対象は「どこから取るか」「どう整形するか」「どこへ出すか」の 3 点に限定する。  
 history や複雑な state 管理は持たない。  
 設計の中心は `source -> transform[] -> sink[]` の単純な実行パイプラインとする。  
-Neovim のシステムクリップボードは provider 経由で扱われるため、clipboard 依存は `sink` に閉じ込める。 [web:35]
+Neovim のシステムクリップボードは provider 経由で扱われるため、clipboard 依存は `sink` に閉じ込める。
 
 ## 設計原則
 
 - 小さく始める
 - ファイル分割は最小限にする
-- 公開APIは少なく保つ
+- 公開 API は少なく保つ
 - 内部データは plain table で統一する
 - source / transform / sink の責務を混ぜない
 - preset を first-class に扱う
 - history は作らない
-- UI統合や picker は v1 では持たない
+- UI 統合や picker は v1 では持たない
 
 ## 役割分担
 
@@ -29,15 +29,13 @@ Neovim のシステムクリップボードは provider 経由で扱われるた
 - `commands`: ユーザーコマンドを提供する
 - `util`: 正規化や path 処理などの補助を提供する
 
-## 推奨ディレクトリ構成
+## ディレクトリ構成
 
 ```text
 my-yank.nvim/
-├── plugin/
-│   └── my-yank.lua
 └── lua/
-    ├── my-yank.lua
-    └── my-yank/
+    └── my_yank/
+        ├── init.lua          # 公開 API (setup / run / copy)
         ├── config.lua
         ├── commands.lua
         ├── runner.lua
@@ -47,29 +45,43 @@ my-yank.nvim/
         └── util.lua
 ```
 
-この構成は、Neovim Lua プラグインで一般的な `plugin/` と `lua/` の分離に沿う。
+`lua/my_yank/init.lua` がルートモジュールとなっており、  
+`require("my_yank")` で `setup` / `run` / `copy` にアクセスする。
 
-## 公開API
+## 公開 API
 
-公開APIは最小限にする。
+公開 API は最小限にする。
 
 ```lua
--- lua/my-yank.lua
+-- lua/my_yank/init.lua
+local config = require("my_yank.config")
+local commands = require("my_yank.commands")
+local runner = require("my_yank.runner")
+
 local M = {}
 
-function M.setup(opts) end
-function M.run(name_or_spec) end
-function M.copy(name_or_spec) end
+function M.setup(opts)
+  config.setup(opts or {})
+  commands.setup()
+end
+
+function M.run(name_or_spec)
+  return runner.run(name_or_spec)
+end
+
+function M.copy(name_or_spec)
+  return M.run(name_or_spec)
+end
 
 return M
 ```
 
 ### 方針
 
-- `setup(opts)` は設定と preset 登録を行う
+- `setup(opts)` は設定と preset 登録、およびコマンド登録を行う
 - `run(name_or_spec)` は preset 名または spec table を実行する
 - `copy(name_or_spec)` は `run()` の alias とする
-- 公開APIに source/transform/sink の詳細を漏らさない
+- 公開 API に source/transform/sink の詳細を漏らさない
 
 ## 実行モデル
 
@@ -95,7 +107,6 @@ spec
 ## 設定方針
 
 設定は `setup()` で受け取り、デフォルト値と deep merge する。  
-Neovim Lua プラグインでは `setup()` を提供する構成が一般的である。 [web:48]
 
 ```lua
 {
@@ -180,6 +191,8 @@ M.visual = function(opts) end
 M.line = function(opts) end
 M.filepath = function(opts) end
 M.register = function(opts) end
+M.messages = function(opts) end
+M.terminal_block = function(opts) end
 
 return M
 ```
@@ -187,10 +200,20 @@ return M
 ### 各 source の責務
 
 - `buffer`: 現在バッファ全体を取得する
-- `visual`: 現在の visual 選択範囲を取得する
-- `line`: 現在行または指定 range を取得する
-- `filepath`: ファイルパス文字列を生成する
+- `visual`: 現在の visual 選択範囲を取得する（visual モードでないときは error）
+- `line`: 現在行または指定行を取得する
+- `filepath`: ファイルパス文字列を生成する（相対/絶対はオプションで切り替え）
 - `register`: 指定レジスタの内容を取得する
+- `messages`: `:messages` の内容を取得する
+- `terminal_block`: ターミナルバッファのカーソル位置の「1 コマンド + その出力」を取得する
+
+### `terminal_block` の仕様メモ
+
+- プロンプトは「2 行構成」であることを前提にする
+- 2 行目の行頭が `$` / `>` / `PS>` のいずれかである行を「プロンプト 2 行目」とみなす
+- 現在行から上方向にさかのぼって直近のプロンプト 2 行目を探し、そのブロック開始を決める
+- 次のプロンプト 2 行目の直前までを 1 ブロックとみなす
+- 1 行目のプロンプト情報や次コマンドのプロンプト 1 行目はコピー対象に含めない
 
 ### source の共通ルール
 
@@ -208,8 +231,9 @@ local M = {}
 
 M.trim = function(payload, opts) end
 M.join = function(payload, opts) end
-M.codeblock = function(payload, opts) end
 M.filepath_header = function(payload, opts) end
+M.codeblock = function(payload, opts) end
+M.eol = function(payload, opts) end
 
 return M
 ```
@@ -220,26 +244,28 @@ return M
 - `join`: 改行を連結する
 - `filepath_header`: 先頭に path を追加する
 - `codeblock`: Markdown fenced code block に変換する
+- `eol`: 改行コードを LF に統一する（末尾の改行有無もオプションで制御）
 
 ### transform のルール
 
 - payload を破壊的変更してもよいが、一貫性を保つ
 - 可能なら pure function 的に書く
-- `codeblock` は `filepath_header` と分離する
+- `codeblock` は `filepath_header` と分離する（パスを先頭行に出す責務は filepath_header）
 - `lang = "auto"` なら `payload.filetype` を使う
 - `lang = false` なら fence の言語名を付けない
+- `path = "relative" / "absolute"` 指定時は info に `:path` を付ける（例: ```lua:lua/foo.lua）
 
 ### `codeblock` の仕様例
 
 ```lua
-{ "codeblock", lang = "auto", fence = "```" }
+{ "codeblock", lang = "auto", fence = "```", path = "relative" }
 ```
 
 出力例:
 
 ```text
-```lua
-local x = 1
+```lua:lua/foo/bar.lua
+print("hello")
 ```
 ```
 
@@ -260,7 +286,7 @@ return M
 ### v1 に含める sink
 
 - `register`: 指定レジスタへ書き込む
-- `clipboard`: `+` または `*` に書き込む
+- `clipboard`: `+` または `*` に書き込む（default/fallback は config 側で指定）
 - `notify`: 結果を通知する
 
 ### sink のルール
@@ -271,8 +297,6 @@ return M
 - provider 不在時の fallback をここで扱う
 - `notify` は副次的機能に留める
 
-Neovim の clipboard は provider 経由で動作するため、clipboard の問題を source や runner に漏らさない。
-
 ## util モジュール指針
 
 `util.lua` は以下のような補助だけを置く。
@@ -281,7 +305,7 @@ Neovim の clipboard は provider 経由で動作するため、clipboard の問
 - preset 解決
 - path の relative/absolute 変換
 - visual range の抽出
-- table merge 補助
+- text/lines 相互変換と payload 生成
 - エラーメッセージ整形
 
 ### 置かないもの
@@ -295,38 +319,16 @@ Neovim の clipboard は provider 経由で動作するため、clipboard の問
 
 ユーザーコマンドは `nvim_create_user_command()` で定義する。
 
-```lua
-:MyYankRun {preset}
-:MyYankCopyPath
-:MyYankCopyBufferCodeblock
+```vim
+:MyYank {preset}
 ```
 
 ### 方針
 
-- 基本は `:MyYankRun` を主コマンドにする
-- よく使うものだけ別名コマンドを置く
+- コマンドは `:MyYank` 1 本に絞る（引数で preset 名を渡す）
+- 引数の補完で preset 名を提示する
 - コマンド実装は薄くし、処理本体は `require("my_yank").run()` に委譲する
-- `nargs` は必要最小限に設定する
-
-## plugin エントリポイント指針
-
-`plugin/my_yank.lua` では、自動読込時に重い処理をしない。  
-Neovim Lua プラグインでは、必要時まで重い `require()` を避ける実践も推奨される。[10]
-
-```lua
-if vim.g.loaded_my_yank then
-  return
-end
-vim.g.loaded_my_yank = 1
-
-require("my_yank.commands").setup()
-```
-
-### 方針
-
-- setup の自動呼び出しはしない
-- コマンド登録だけを行う
-- 実際の処理はコマンド実行時に require してもよい
+- `nargs = 1` とし、preset 名の指定を必須にする
 
 ## エラー処理方針
 
@@ -351,15 +353,15 @@ v1 で扱うべきエラーは限定する。
 preset はこのプラグインの主な利用面とする。  
 ユーザーは source / transform / sink の詳細よりも、用途単位で呼び出せるべきである。
 
-### 推奨 preset
+### デフォルト preset のイメージ
 
 ```lua
 presets = {
-  copy_buffer_codeblock = {
+  buffer = {
     source = "buffer",
     transforms = {
       { "filepath_header", format = "relative" },
-      { "codeblock", lang = "auto" },
+      { "codeblock", lang = "auto", path = "relative" },
     },
     sinks = {
       "clipboard",
@@ -367,7 +369,7 @@ presets = {
     },
   },
 
-  copy_visual_codeblock = {
+  visual = {
     source = "visual",
     transforms = {
       { "codeblock", lang = "auto" },
@@ -378,7 +380,29 @@ presets = {
     },
   },
 
-  copy_path = {
+  messages = {
+    source = "messages",
+    transforms = {
+      { "codeblock", lang = "txt", path = "relative" },
+    },
+    sinks = {
+      "clipboard",
+      "notify",
+    },
+  },
+
+  terminal = {
+    source = "terminal_block",
+    transforms = {
+      { "codeblock", lang = "bash", path = "none" },
+    },
+    sinks = {
+      "clipboard",
+      "notify",
+    },
+  },
+
+  path = {
     source = "filepath",
     source_opts = { format = "relative" },
     sinks = {
@@ -387,7 +411,7 @@ presets = {
     },
   },
 
-  copy_path_with_line = {
+  path_with_line = {
     source = "filepath",
     source_opts = { format = "relative", with_line = true },
     sinks = {
@@ -404,9 +428,9 @@ presets = {
 2. `runner.lua`
 3. `source.buffer`, `source.visual`, `source.filepath`
 4. `sink.register`, `sink.clipboard`, `sink.notify`
-5. `transform.codeblock`, `transform.filepath_header`, `transform.trim`
+5. `transform.codeblock`, `transform.filepath_header`, `transform.trim`, `transform.eol`
 6. `commands.lua`
-7. 必要なら `line`, `register`, `join`
+7. `messages` / `terminal_block` / `line` / `register` など追加 source
 
 ## v1 で入れないもの
 
@@ -423,5 +447,4 @@ presets = {
 `my-yank.nvim` は「高機能ヤンクマネージャ」ではなく、  
 **小さな copy pipeline を preset で使い回すためのプラグイン**として設計する。  
 細かく分割しすぎず、しかし責務は混ぜない。  
-個人開発では「理論上の拡張性」よりも「3か月後の自分が読めること」を優先する。[4]
-
+個人開発では「理論上の拡張性」よりも「3 か月後の自分が読めること」を優先する。
