@@ -38,8 +38,9 @@ require("my-yank").setup({
     copy_buffer_codeblock = {
       source = "buffer",
       transforms = {
-        { "filepath_header", format = "relative" },
-        { "codeblock", lang = "auto" },
+        -- ファイルタイプと相対パスを info に含めたコードブロックを生成します。
+        -- 例: ```lua:lua/hogehoge.lua
+        { "codeblock", lang = "auto", path = "relative" },
       },
       sinks = { "clipboard", "notify" },
     },

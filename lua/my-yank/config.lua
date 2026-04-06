@@ -11,7 +11,7 @@ M.defaults = {
 			source = "buffer",
 			transforms = {
 				{ "filepath_header", format = "relative" },
-				{ "codeblock", lang = "auto" },
+				{ "codeblock", lang = "auto", path = "relative" },
 			},
 			sinks = {
 				"clipboard",
