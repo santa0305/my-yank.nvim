@@ -102,4 +102,69 @@ function M.messages(opts)
 	})
 end
 
+function M.terminal_block(opts)
+	opts = opts or {}
+	local bufnr = util.bufnr(opts.bufnr)
+	local cur_row = opts.row or vim.api.nvim_win_get_cursor(0)[1]
+	local last_row = vim.api.nvim_buf_line_count(bufnr)
+	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+
+	local function is_prompt(line)
+		if not line then
+			return false
+		end
+		return line:match("^%s*PS>") or line:match("^%s*%$") or line:match("^%s*>")
+	end
+
+	-- 現在位置から上へたどって、直近の「prompt 2行目」を探す
+	local prompt_row = cur_row
+	while prompt_row > 1 and not is_prompt(lines[prompt_row]) do
+		prompt_row = prompt_row - 1
+	end
+
+	-- prompt は常に 2 行構成なので、ブロック開始はその 1 行前
+	local start_row = math.max(1, prompt_row)
+
+	-- 次のブロックの prompt 2行目を探す
+	local next_prompt_row = nil
+	for row = prompt_row + 1, last_row do
+		if is_prompt(lines[row]) then
+			next_prompt_row = row
+			break
+		end
+	end
+
+	-- 次ブロックが見つかったら、その 2 行前までをこのブロックにする
+	-- つまり:
+	--   next_prompt_row - 1 = 次ブロックの prompt 1行目
+	--   next_prompt_row - 2 = このブロックの最終行
+	local end_row
+	if next_prompt_row then
+		end_row = math.max(start_row, next_prompt_row - 2)
+	else
+		end_row = last_row
+	end
+
+	local block_lines = {}
+	for i = start_row, end_row do
+		table.insert(block_lines, lines[i])
+	end
+
+	local text = table.concat(block_lines, "\n")
+
+	return util.make_payload({
+		text = text,
+		lines = block_lines,
+		source = "terminal_block",
+		bufnr = bufnr,
+		filetype = "terminal",
+		filepath = vim.api.nvim_buf_get_name(bufnr),
+		metadata = {
+			range = { start_row = start_row, end_row = end_row },
+			prompt_row = prompt_row,
+			next_prompt_row = next_prompt_row,
+		},
+	})
+end
+
 return M

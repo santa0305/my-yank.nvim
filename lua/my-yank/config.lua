@@ -40,6 +40,16 @@ M.defaults = {
 				"notify",
 			},
 		},
+		copy_terminal_block_codeblock = {
+			source = "terminal_block",
+			transforms = {
+				{ "codeblock", lang = "bash", path = "none" },
+			},
+			sinks = {
+				"clipboard",
+				"notify",
+			},
+		},
 		copy_path = {
 			source = "filepath",
 			source_opts = { format = "relative" },
