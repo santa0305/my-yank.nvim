@@ -7,7 +7,7 @@ M.defaults = {
 	},
 	notify = true,
 	presets = {
-		copy_buffer_codeblock = {
+		buffer = {
 			source = "buffer",
 			transforms = {
 				{ "filepath_header", format = "relative" },
@@ -18,7 +18,7 @@ M.defaults = {
 				"notify",
 			},
 		},
-		copy_visual_codeblock = {
+		visual = {
 			source = "visual",
 			transforms = {
 				{ "codeblock", lang = "auto" },
@@ -28,7 +28,7 @@ M.defaults = {
 				"notify",
 			},
 		},
-		copy_messages_codeblock = {
+		messages = {
 			source = "messages",
 			transforms = {
 				{ "codeblock", lang = "txt", path = "relative" },
@@ -40,7 +40,7 @@ M.defaults = {
 				"notify",
 			},
 		},
-		copy_terminal_block_codeblock = {
+		terminal = {
 			source = "terminal_block",
 			transforms = {
 				{ "codeblock", lang = "bash", path = "none" },
@@ -50,7 +50,7 @@ M.defaults = {
 				"notify",
 			},
 		},
-		copy_path = {
+		path = {
 			source = "filepath",
 			source_opts = { format = "relative" },
 			sinks = {
@@ -58,7 +58,7 @@ M.defaults = {
 				"notify",
 			},
 		},
-		copy_path_with_line = {
+		path_with_line = {
 			source = "filepath",
 			source_opts = { format = "relative", with_line = true },
 			sinks = {
