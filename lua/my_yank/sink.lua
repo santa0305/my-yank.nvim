@@ -1,4 +1,4 @@
-local config = require("my-yank.config")
+local config = require("my_yank.config")
 
 local M = {}
 
@@ -20,7 +20,7 @@ function M.clipboard(payload, opts)
 		vim.fn.setreg(fallback, payload.text, payload.regtype or "v")
 		if conf.notify then
 			vim.notify(
-				string.format("my-yank: clipboard unavailable, wrote to %s register", fallback),
+				string.format("my_yank: clipboard unavailable, wrote to %s register", fallback),
 				vim.log.levels.WARN
 			)
 		end

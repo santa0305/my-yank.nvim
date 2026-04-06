@@ -305,12 +305,12 @@ Neovim の clipboard は provider 経由で動作するため、clipboard の問
 
 - 基本は `:MyYankRun` を主コマンドにする
 - よく使うものだけ別名コマンドを置く
-- コマンド実装は薄くし、処理本体は `require("my-yank").run()` に委譲する
+- コマンド実装は薄くし、処理本体は `require("my_yank").run()` に委譲する
 - `nargs` は必要最小限に設定する
 
 ## plugin エントリポイント指針
 
-`plugin/my-yank.lua` では、自動読込時に重い処理をしない。  
+`plugin/my_yank.lua` では、自動読込時に重い処理をしない。  
 Neovim Lua プラグインでは、必要時まで重い `require()` を避ける実践も推奨される。[10]
 
 ```lua
@@ -319,7 +319,7 @@ if vim.g.loaded_my_yank then
 end
 vim.g.loaded_my_yank = 1
 
-require("my-yank.commands").setup()
+require("my_yank.commands").setup()
 ```
 
 ### 方針

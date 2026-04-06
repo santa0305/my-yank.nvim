@@ -5,7 +5,7 @@ H.new_child = function()
 
 	local setup = function()
 		child.restart()
-		child.lua([[M = require('my-yank')]])
+		child.lua([[M = require('my_yank')]])
 	end
 
 	return child, setup

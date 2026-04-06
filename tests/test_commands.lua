@@ -2,8 +2,8 @@ local MiniTest = require("mini.test")
 local new_set = MiniTest.new_set
 local eq = MiniTest.expect.equality
 
-local my_yank = require("my-yank")
-local runner = require("my-yank.runner")
+local my_yank = require("my_yank")
+local runner = require("my_yank.runner")
 
 -- ★ このファイル内でだけ使う setup 関数
 local function setup_my_yank_for_commands()

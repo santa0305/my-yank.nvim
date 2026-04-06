@@ -8,7 +8,7 @@ local new_set = MiniTest.new_set
 local eq = MiniTest.expect.equality
 
 -- util モジュール本体を読み込みます
-local util = require("my-yank.util")
+local util = require("my_yank.util")
 
 -- このファイルのテストセットを作成します
 local TestUtil = new_set()
