@@ -19,14 +19,14 @@ local function setup_my_yank_for_runner()
 			buffer_to_codeblock = {
 				source = "buffer",
 				transforms = {
-					{ name = "codeblock", opts = { lang = "lua" } },
+					{ "codeblock", lang = "lua" },
 				},
 				sinks = {},
 			},
 			copy_buffer_codeblock = {
 				source = "buffer",
 				transforms = {
-					{ name = "codeblock", opts = { lang = "lua" } },
+					{ "codeblock", lang = "lua" },
 				},
 				sinks = {},
 			},

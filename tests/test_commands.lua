@@ -18,14 +18,14 @@ local function setup_my_yank_for_commands()
 			test_preset = {
 				source = "buffer",
 				transforms = {
-					{ name = "codeblock", opts = { lang = "lua" } },
+					{ "codeblock", lang = "lua" },
 				},
 				sinks = {},
 			},
 			copy_buffer_codeblock = {
 				source = "buffer",
 				transforms = {
-					{ name = "codeblock", opts = { lang = "lua" } },
+					{ "codeblock", lang = "lua" },
 				},
 				sinks = {},
 			},
@@ -41,18 +41,16 @@ end
 -- このファイルのテストセット
 local TestCommands = new_set()
 
-TestCommands[":MyYankRun and others are defined"] = function()
+TestCommands[":MyYank is defined"] = function()
 	-- ★ 各テストの先頭で必ず setup を呼ぶ
 	setup_my_yank_for_commands()
 
 	local commands = vim.api.nvim_get_commands({})
 
-	eq(commands["MyYankRun"] ~= nil, true)
-	eq(commands["MyYankCopyPath"] ~= nil, true)
-	eq(commands["MyYankCopyBufferCodeblock"] ~= nil, true)
+	eq(commands["MyYank"] ~= nil, true)
 end
 
-TestCommands[":MyYankRun executes preset without error"] = function()
+TestCommands[":MyYank executes preset without error"] = function()
 	setup_my_yank_for_commands()
 
 	vim.cmd("new")
@@ -68,7 +66,7 @@ TestCommands[":MyYankRun executes preset without error"] = function()
 		return original_run(name_or_spec)
 	end
 
-	vim.cmd("MyYankRun test_preset")
+	vim.cmd("MyYank test_preset")
 
 	runner.run = original_run
 
