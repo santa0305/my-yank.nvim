@@ -7,10 +7,10 @@ M.defaults = {
 	},
 	notify = true,
 	presets = {
+		-- バッファ全体を ```lang:relative/path 形式のコードブロックとしてコピーします
 		buffer = {
 			source = "buffer",
 			transforms = {
-				{ "filepath_header", format = "relative" },
 				{ "codeblock", lang = "auto", path = "relative" },
 			},
 			sinks = {
