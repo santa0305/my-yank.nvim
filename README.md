@@ -52,54 +52,88 @@ preset 名は Tab 補完で確認できます。
 
 ## デフォルト preset
 
-| preset 名        | source          | 動作                                                |
-|------------------|-----------------|-----------------------------------------------------|
-| `buffer`         | `buffer`        | バッファ全体をファイルパス付きコードブロックとしてコピー |
-| `visual`         | `visual`        | ビジュアル選択範囲をコードブロックとしてコピー          |
-| `terminal`       | `terminal_block`| ターミナルバッファのカーソル位置のコマンドブロックをコピー |
-| `messages`       | `messages`      | `:messages` の内容をコードブロックとしてコピー      |
-| `path`           | `filepath`      | 相対パスをコピー                                    |
-| `path_with_line` | `filepath`      | 行番号付き相対パスをコピー                          |
+| preset 名        | source           | 動作                                                   |
+|------------------|------------------|--------------------------------------------------------|
+| `buffer`         | `buffer`         | バッファ全体をファイルパス付きコードブロックとしてコピー |
+| `visual`         | `visual`         | ビジュアル選択範囲をコードブロックとしてコピー           |
+| `terminal`       | `terminal_block` | ターミナルバッファのカーソル位置のコマンドブロックをコピー |
+| `messages`       | `messages`       | `:messages` の内容をコードブロックとしてコピー           |
+| `path`           | `filepath`       | 相対パスをコピー                                       |
+| `path_with_line` | `filepath`       | 行番号付き相対パスをコピー                             |
 
 ## ターミナルブロックコピーについて
 
 `terminal_block` source は、ターミナルバッファ内でカーソル位置が属する
 「1 コマンド + その出力」を抽出してコピーします。
 
-想定しているプロンプト形式:
+既定で認識する prompt 2 行目の候補:
+
+- `$`
+- `>`
+- `PS>`
+- `#`
+- `%`
+- `╰`
+- `❯`
+- `➜`
+
+前提と制約:
 
 - プロンプトは常に 2 行構成
-- 2 行目の行頭が `$`、`>`、`PS>` のいずれか
+- 上記候補のいずれかで始まる行を「プロンプト 2 行目」とみなす
 - 1 行目のプロンプト情報（ユーザー名・ホスト名など）はコピーしない
-- 次のコマンドのプロンプト 1 行目もコピーしない
+- 次のコマンドのプロンプト 1 行目もコピーしない想定
+- 1 行 prompt や複雑な複数行 prompt を完全に一般化したわけではない
 
-コピー結果には「コマンド本体の行」と、そのコマンドに対応する出力だけが含まれます。
+`source_opts.prompt_patterns` を使うと、追加の Lua パターンを指定できます。
+既定候補は残したまま、ユーザー定義の候補を後ろに追加して判定します。
+
+```lua
+require("my_yank").setup({
+  presets = {
+    terminal = {
+      source = "terminal_block",
+      source_opts = {
+        prompt_patterns = {
+          "^%s*>>>",
+          "^%s*%(venv%)%s*%$",
+        },
+      },
+      transforms = {
+        { "codeblock", lang = "bash" },
+      },
+      sinks = { "clipboard", "notify" },
+    },
+  },
+})
+```
 
 ## 設定例
 
 ```lua
 require("my_yank").setup({
   clipboard = {
-    default_register = "+",   -- clipboard sink のデフォルトレジスタ
-    fallback_register = '"',  -- clipboard 書き込み失敗時の fallback
+    default_register = "+",
+    fallback_register = '"',
   },
-  notify = true,  -- false にすると notify sink を無効化
+  notify = true,
   presets = {
-    -- デフォルト preset を上書き、または新規 preset を追加
     buffer = {
       source = "buffer",
       transforms = {
-        -- ```lua:lua/hogehoge.lua のような info 付きコードブロックを生成
         { "codeblock", lang = "auto", path = "relative" },
       },
       sinks = { "clipboard", "notify" },
     },
-
-    -- カスタム preset の例: :messages をコードブロックとしてコピー
-    copy_messages = {
-      source = "messages",
+    terminal = {
+      source = "terminal_block",
+      source_opts = {
+        prompt_patterns = {
+          "^%s*>>>",
+        },
+      },
       transforms = {
-        { "codeblock", lang = "txt" },
+        { "codeblock", lang = "bash", path = "none" },
       },
       sinks = { "clipboard", "notify" },
     },
@@ -111,25 +145,25 @@ require("my_yank").setup({
 
 ### source
 
-| 名前            | 取得内容                                           |
-|-----------------|----------------------------------------------------|
-| `buffer`        | 現在バッファ全体                                   |
-| `visual`        | ビジュアル選択範囲（`v` / `V`）                    |
-| `line`          | 現在行または指定行                                 |
-| `filepath`      | ファイルパス文字列                                 |
-| `register`      | 指定レジスタの内容                                 |
-| `messages`      | `:messages` の出力                                 |
-| `terminal_block`| ターミナルバッファのカーソル位置のコマンドブロック |
+| 名前             | 取得内容                                            |
+|------------------|-----------------------------------------------------|
+| `buffer`         | 現在バッファ全体                                    |
+| `visual`         | ビジュアル選択範囲（`v` / `V`）                     |
+| `line`           | 現在行または指定行                                  |
+| `filepath`       | ファイルパス文字列                                  |
+| `register`       | 指定レジスタの内容                                  |
+| `messages`       | `:messages` の出力                                  |
+| `terminal_block` | ターミナルバッファのカーソル位置のコマンドブロック  |
 
 ### transform
 
-| 名前             | 動作                                            |
-|------------------|-------------------------------------------------|
-| `trim`           | 前後の空白・空行を除去                          |
-| `join`           | 複数行を1行に結合（`sep` オプションで区切りを指定） |
-| `filepath_header`| 先頭にファイルパス行を追加                      |
-| `codeblock`      | Markdown fenced code block で囲む               |
-| `eol`            | 改行コードを LF に統一                          |
+| 名前              | 動作                                                  |
+|-------------------|-------------------------------------------------------|
+| `trim`            | 前後の空白・空行を除去                                |
+| `join`            | 複数行を1行に結合（`sep` オプションで区切りを指定）   |
+| `filepath_header` | 先頭にファイルパス行を追加                            |
+| `codeblock`       | Markdown fenced code block で囲む                     |
+| `eol`             | 改行コードを LF に統一                                |
 
 #### `codeblock` オプション
 
@@ -139,16 +173,16 @@ require("my_yank").setup({
 
 - `lang`: `"auto"`（filetype を使用） / `false`（言語名なし） / `"lua"` などの固定値
 - `path`: `"relative"` / `"absolute"` / 省略（パスなし）
-  - 指定すると \`\`\`lua:lua/foo.lua のような info 文字列になります
-- `fence`: フェンス文字列（デフォルト: \`\`\`）
+  - 指定すると ```lua:lua/foo.lua のような info 文字列になります
+- `fence`: フェンス文字列（デフォルト: ```）
 
 ### sink
 
-| 名前        | 動作                                               |
-|-------------|----------------------------------------------------|
-| `register`  | 指定レジスタへ書き込む（デフォルト: `"` レジスタ） |
-| `clipboard` | `+` レジスタへ書き込む（失敗時は fallback に書き込み） |
-| `notify`    | コピーした文字数を `vim.notify` で通知             |
+| 名前        | 動作                                                        |
+|-------------|-------------------------------------------------------------|
+| `register`  | 指定レジスタへ書き込む（デフォルト: `"` レジスタ）          |
+| `clipboard` | `+` レジスタへ書き込む（失敗時は fallback に書き込み）      |
+| `notify`    | コピーした文字数を `vim.notify` で通知                      |
 
 ## キーマップ例
 
@@ -177,10 +211,8 @@ end, { desc = "Copy relative path" })
 ## Lua API
 
 ```lua
--- preset 名で実行
 require("my_yank").run("buffer")
 
--- spec を直接渡して実行
 require("my_yank").run({
   source = "visual",
   transforms = {
@@ -189,7 +221,6 @@ require("my_yank").run({
   sinks = { "clipboard", "notify" },
 })
 
--- run() の alias
 require("my_yank").copy("path")
 ```
 
@@ -198,9 +229,6 @@ require("my_yank").copy("path")
 [mini.nvim](https://github.com/echasnovski/mini.nvim) の `mini.test` を使用しています。
 
 ```bash
-# 全テスト実行
 make test
-
-# 特定ファイルのみ実行
 make test_file FILE=tests/test_transform.lua
 ```

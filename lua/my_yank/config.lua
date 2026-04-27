@@ -42,8 +42,11 @@ M.defaults = {
 		},
 		terminal = {
 			source = "terminal_block",
+			source_opts = {
+				prompt_patterns = {},
+			},
 			transforms = {
-				{ "codeblock", lang = "bash", path = "none" },
+				{ "codeblock", lang = "pwsh", path = "none" },
 			},
 			sinks = {
 				"clipboard",

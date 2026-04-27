@@ -2,6 +2,41 @@ local util = require("my_yank.util")
 
 local M = {}
 
+local DEFAULT_TERMINAL_PROMPT_PATTERNS = {
+	"^%s*PS>",
+	"^%s*%$",
+	"^%s*>",
+	"^%s*#",
+	"^%s*%%",
+	"^%s*╰",
+	"^%s*❯",
+	"^%s*➜",
+}
+
+local function get_prompt_patterns(opts)
+	local patterns = vim.deepcopy(DEFAULT_TERMINAL_PROMPT_PATTERNS)
+
+	for _, pattern in ipairs(opts.prompt_patterns or {}) do
+		table.insert(patterns, pattern)
+	end
+
+	return patterns
+end
+
+local function is_prompt_line(line, prompt_patterns)
+	if not line then
+		return false
+	end
+
+	for _, pattern in ipairs(prompt_patterns) do
+		if line:match(pattern) then
+			return true
+		end
+	end
+
+	return false
+end
+
 function M.buffer(opts)
 	opts = opts or {}
 	local bufnr = util.bufnr(opts.bufnr)
@@ -108,17 +143,11 @@ function M.terminal_block(opts)
 	local cur_row = opts.row or vim.api.nvim_win_get_cursor(0)[1]
 	local last_row = vim.api.nvim_buf_line_count(bufnr)
 	local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-
-	local function is_prompt(line)
-		if not line then
-			return false
-		end
-		return line:match("^%s*PS>") or line:match("^%s*%$") or line:match("^%s*>")
-	end
+	local prompt_patterns = get_prompt_patterns(opts)
 
 	-- 現在位置から上へたどって、直近の「prompt 2行目」を探す
 	local prompt_row = cur_row
-	while prompt_row > 1 and not is_prompt(lines[prompt_row]) do
+	while prompt_row > 1 and not is_prompt_line(lines[prompt_row], prompt_patterns) do
 		prompt_row = prompt_row - 1
 	end
 
@@ -128,7 +157,7 @@ function M.terminal_block(opts)
 	-- 次のブロックの prompt 2行目を探す
 	local next_prompt_row = nil
 	for row = prompt_row + 1, last_row do
-		if is_prompt(lines[row]) then
+		if is_prompt_line(lines[row], prompt_patterns) then
 			next_prompt_row = row
 			break
 		end
@@ -163,8 +192,10 @@ function M.terminal_block(opts)
 			range = { start_row = start_row, end_row = end_row },
 			prompt_row = prompt_row,
 			next_prompt_row = next_prompt_row,
+			prompt_patterns = prompt_patterns,
 		},
 	})
 end
 
 return M
+
